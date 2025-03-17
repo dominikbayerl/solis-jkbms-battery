@@ -1,0 +1,102 @@
+substitutions:
+  name: solis
+  sdm120_modbus_id: sdm120_modbus
+  shellyem3_id: !secret shellyem3_id
+
+esphome:
+  name: ${name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: ""
+
+ota:
+  - platform: esphome
+    password: ""
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${name} Fallback Hotspot"
+    password: !secret wifi_fallback_password
+
+captive_portal:
+
+mqtt:
+  broker: !secret mqtt_broker
+  username: "${name}"
+  password: !secret mqtt_password
+
+sensor:
+  - platform: mqtt_subscribe
+    name: "Shelly 3EM Phase 1 Power"
+    id: "shellyem3_${shellyem3_id}_emeter_0_power"
+    topic: "shellies/shellyem3-${shellyem3_id}/emeter/0/power"
+    unit_of_measurement: "W"
+
+  - platform: mqtt_subscribe
+    name: "Shelly 3EM Phase 1 Volt"
+    id: "shellyem3_${shellyem3_id}_emeter_0_voltage"
+    topic: "shellies/shellyem3-${shellyem3_id}/emeter/0/voltage"
+    unit_of_measurement: "V"
+
+  - platform: mqtt_subscribe
+    name: "Shelly 3EM Phase 2 Power"
+    id: "shellyem3_${shellyem3_id}_emeter_1_power"
+    topic: "shellies/shellyem3-${shellyem3_id}/emeter/1/power"
+    unit_of_measurement: "W"
+
+  - platform: mqtt_subscribe
+    name: "Shelly 3EM Phase 2 Voltage"
+    id: "shellyem3_${shellyem3_id}_emeter_1_voltage"
+    topic: "shellies/shellyem3-${shellyem3_id}/emeter/1/voltage"
+    unit_of_measurement: "V"
+
+  - platform: mqtt_subscribe
+    name: "Shelly 3EM Phase 3 Power"
+    id: "shellyem3_${shellyem3_id}_emeter_2_power"
+    topic: "shellies/shellyem3-${shellyem3_id}/emeter/2/power"
+    unit_of_measurement: "W"
+
+  - platform: mqtt_subscribe
+    name: "Shelly 3EM Phase 3 Voltage"
+    id: "shellyem3_${shellyem3_id}_emeter_2_voltage" 
+    topic: "shellies/shellyem3-${shellyem3_id}/emeter/2/voltage"
+    unit_of_measurement: "V"
+
+uart:
+  - id: sdm120_uart
+    rx_pin: GPIO16
+    tx_pin: GPIO17
+    baud_rate: 9600
+    stop_bits: 1
+
+modbus:
+  - id: ${sdm120_modbus_id}
+    uart_id: sdm120_uart
+    role: server
+
+modbus_controller:
+- modbus_id: ${sdm120_modbus_id}
+  address: 0x1
+  server_registers:
+    - address: 0x000c
+      value_type: FP32
+      read_lambda: !lambda 'return id(shellyem3_${shellyem3_id}_emeter_0_power).state;'
+    - address: 0x000e
+      value_type: FP32
+      read_lambda: !lambda 'return 0;'
+    - address: 0x0010
+      value_type: FP32
+      read_lambda: !lambda 'return 0;'
